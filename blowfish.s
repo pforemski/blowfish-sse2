@@ -152,7 +152,7 @@ orig_S: .align 4
 	.long 0x90D4F869, 0xA65CDEA0, 0x3F09252D, 0xC208E69F, 0xB74E6132, 0xCE77E25B, 0x578FDFE3, 0x3AC372E6
 
 ##### TEMPORARY ########
-tmp_key: .ascii "ABECADLO"
+tmp_key: .ascii "LUbu123DUBU"
 
 .section .bss
 # P[18 x 4] + S[4 × 65535 x 4]
@@ -164,7 +164,7 @@ tmp_key: .ascii "ABECADLO"
 _start:
 	movl $tmp_bf, %eax
 	movl $tmp_key, %ebx
-	movl $8, %ecx
+	movl $11, %ecx
 	call bfish_init
 
 	movl $1, %eax
@@ -188,23 +188,24 @@ bfish_init:
 	# 2. copy the key to %xmm0..%xmm4
 	# 3. PXOR %xmms with orig_P
 	# 4. overwrite bf.P with new values from %xmms
-	movl $0, %esi
-	movl $0, %edi
+	movl %ebx, %esi
+	addl %ebx, %ecx
+
+	movl %eax, %edi
+	movl %eax, %edx
+	addl $72, %edx
 bfi_readkey:
 	# copy key to bf.P
-	movb (%ebx,%esi), %dl
-	movb %dl, (%eax,%edi)
+	movsb
 
 	# we need 72 bytes of repeated key
-	incl %edi
-	cmp $72, %edi
+	cmp %edx, %edi
 	je bfi_toxmm
 
 	# loop over the key
-	incl %esi
 	cmp %ecx, %esi
 	jl bfi_readkey
-	movl $0, %esi
+	movl %ebx, %esi
 	jmp bfi_readkey
 
 bfi_toxmm:
@@ -239,7 +240,7 @@ bfi_toxmm:
 
 	# TODO
 	# C. szyfruj w kółko (uint64_t) 0 podstawiając wyniki do bf.P i bf.S
-	# D. uzupełnij bf.S o wartości P (druga połowa 16-bitowego query)
+	# D. uzupełnij bf.S o wartości P (wyższa, niezerowa połowa 16-bitowego adresu bf.S)
 
 	movl %ebp, %esp
 	popl %ebp
