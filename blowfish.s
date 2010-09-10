@@ -182,15 +182,10 @@ bfish_init:
 	pushl %ebp
 	movl %esp, %ebp
 
-	#####################################################################
-	# Prepare bf.P
-	# 1. expand the key to 72 bytes, storing temporarily in bf.P
-	# 2. copy the key to %xmm0..%xmm4
-	# 3. PXOR %xmms with orig_P
-	# 4. overwrite bf.P with new values from %xmms
+	### Prepare bf.P ####################################################
+	# expand the key to 72 bytes, storing temporarily in bf.P
 	movl %ebx, %esi
 	addl %ebx, %ecx
-
 	movl %eax, %edi
 	movl %eax, %edx
 	addl $72, %edx
@@ -230,7 +225,7 @@ bfi_toxmm:
 	movdqu %xmm3, 48(%eax)
 	movq   %xmm4, 64(%eax)
 
-	#####################################################################
+	### Prepare bf.S ####################################################
 	# copy whole orig_S (4 S-Boxes of 256 words) to bf.S (%eax+72)
 	movl $orig_S, %esi
 	movl %eax, %edi
