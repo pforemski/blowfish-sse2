@@ -7,17 +7,15 @@
 .section .data
 
 # P[1..18] of 32bit (PI in hex) - stored as 5 strings for 128-bit PXOR
-orig_P:
-	.align 16
+orig_P: .align 16
 	.byte 0x24, 0x3F, 0x6A, 0x88, 0x85, 0xA3, 0x08, 0xD3, 0x13, 0x19, 0x8A, 0x2E, 0x03, 0x70, 0x73, 0x44
 	.byte 0xA4, 0x09, 0x38, 0x22, 0x29, 0x9F, 0x31, 0xD0, 0x08, 0x2E, 0xFA, 0x98, 0xEC, 0x4E, 0x6C, 0x89
 	.byte 0x45, 0x28, 0x21, 0xE6, 0x38, 0xD0, 0x13, 0x77, 0xBE, 0x54, 0x66, 0xCF, 0x34, 0xE9, 0x0C, 0x6C
 	.byte 0xC0, 0xAC, 0x29, 0xB7, 0xC9, 0x7C, 0x50, 0xDD, 0x3F, 0x84, 0xD5, 0xB5, 0xB5, 0x47, 0x09, 0x17
 	.byte 0x92, 0x16, 0xD5, 0xD9, 0x89, 0x79, 0xFB, 0x1B, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
 
-# S1[0..255] of 32bit - PI cont.
-orig_S1:
-	.align 4
+orig_S: .align 4
+	# S1[0..255] of 32bit - PI cont.
 	.long 0xD1310BA6, 0x98DFB5AC, 0x2FFD72DB, 0xD01ADFB7, 0xB8E1AFED, 0x6A267E96, 0xBA7C9045, 0xF12C7F99
 	.long 0x24A19947, 0xB3916CF7, 0x0801F2E2, 0x858EFC16, 0x636920D8, 0x71574E69, 0xA458FEA3, 0xF4933D7E
 	.long 0x0D95748F, 0x728EB658, 0x718BCD58, 0x82154AEE, 0x7B54A41D, 0xC25A59B5, 0x9C30D539, 0x2AF26013
@@ -51,9 +49,7 @@ orig_S1:
 	.long 0xD60F573F, 0xBC9BC6E4, 0x2B60A476, 0x81E67400, 0x08BA6FB5, 0x571BE91F, 0xF296EC6B, 0x2A0DD915
 	.long 0xB6636521, 0xE7B9F9B6, 0xFF34052E, 0xC5855664, 0x53B02D5D, 0xA99F8FA1, 0x08BA4799, 0x6E85076A
 
-# S2[0..255] of 32bit - PI cont.
-orig_S2:
-	.align 4
+	# S2[0..255] of 32bit - PI cont.
 	.long 0x4B7A70E9, 0xB5B32944, 0xDB75092E, 0xC4192623, 0xAD6EA6B0, 0x49A7DF7D, 0x9CEE60B8, 0x8FEDB266
 	.long 0xECAA8C71, 0x699A17FF, 0x5664526C, 0xC2B19EE1, 0x193602A5, 0x75094C29, 0xA0591340, 0xE4183A3E
 	.long 0x3F54989A, 0x5B429D65, 0x6B8FE4D6, 0x99F73FD6, 0xA1D29C07, 0xEFE830F5, 0x4D2D38E6, 0xF0255DC1
@@ -87,9 +83,7 @@ orig_S2:
 	.long 0x9E447A2E, 0xC3453484, 0xFDD56705, 0x0E1E9EC9, 0xDB73DBD3, 0x105588CD, 0x675FDA79, 0xE3674340
 	.long 0xC5C43465, 0x713E38D8, 0x3D28F89E, 0xF16DFF20, 0x153E21E7, 0x8FB03D4A, 0xE6E39F2B, 0xDB83ADF7
 
-# S3[0..255] of 32bit - PI cont.
-orig_S3:
-	.align 4
+	# S3[0..255] of 32bit - PI cont.
 	.long 0xE93D5A68, 0x948140F7, 0xF64C261C, 0x94692934, 0x411520F7, 0x7602D4F7, 0xBCF46B2E, 0xD4A20068
 	.long 0xD4082471, 0x3320F46A, 0x43B7D4B7, 0x500061AF, 0x1E39F62E, 0x97244546, 0x14214F74, 0xBF8B8840
 	.long 0x4D95FC1D, 0x96B591AF, 0x70F4DDD3, 0x66A02F45, 0xBFBC09EC, 0x03BD9785, 0x7FAC6DD0, 0x31CB8504
@@ -123,9 +117,7 @@ orig_S3:
 	.long 0xED545578, 0x08FCA5B5, 0xD83D7CD3, 0x4DAD0FC4, 0x1E50EF5E, 0xB161E6F8, 0xA28514D9, 0x6C51133C
 	.long 0x6FD5C7E7, 0x56E14EC4, 0x362ABFCE, 0xDDC6C837, 0xD79A3234, 0x92638212, 0x670EFA8E, 0x406000E0
 
-# S4[0..255] of 32bit - PI cont.
-orig_S4:
-	.align 4
+	# S4[0..255] of 32bit - PI cont.
 	.long 0x3A39CE37, 0xD3FAF5CF, 0xABC27737, 0x5AC52D1B, 0x5CB0679E, 0x4FA33742, 0xD3822740, 0x99BC9BBE
 	.long 0xD5118E9D, 0xBF0F7315, 0xD62D1C7E, 0xC700C47B, 0xB78C1B6B, 0x21A19045, 0xB26EB1BE, 0x6A366EB4
 	.long 0x5748AB2F, 0xBC946E79, 0xC6A376D2, 0x6549C2C8, 0x530FF8EE, 0x468DDE7D, 0xD5730A1D, 0x4CD04DC6
@@ -190,16 +182,12 @@ bfish_init:
 	pushl %ebp
 	movl %esp, %ebp
 
-	# TODO
-	# A. przygotuj bf.P
-	#   1. przygotuj rozszerzony klucz w %xmm0..%xmm4
-	#   2. wykonaj 5 PXOR używając orig_P
-	#   3. zapisz wyniki do bf.P
-	# B. przygotuj bf.S
-	#   1. skopiuj orig_S
-	# C. szyfruj w kółko (uint64_t) 0 podstawiając wyniki do bf.P i bf.S
-	# D. uzupełnij bf.S o wartości P (druga połowa 16-bitowego query)
-
+	#####################################################################
+	# Prepare bf.P
+	# 1. expand the key to 72 bytes, storing temporarily in bf.P
+	# 2. copy the key to %xmm0..%xmm4
+	# 3. PXOR %xmms with orig_P
+	# 4. overwrite bf.P with new values from %xmms
 	movl $0, %esi
 	movl $0, %edi
 bfi_readkey:
@@ -228,17 +216,31 @@ bfi_toxmm:
 	movq   64(%eax), %xmm4
 
 	# PXOR with orig_P
-	pxor orig_P +  0, %xmm0
-	pxor orig_P + 16, %xmm1
-	pxor orig_P + 32, %xmm2
-	pxor orig_P + 48, %xmm3
-	pxor orig_P + 64, %xmm4
+	pxor orig_P+ 0, %xmm0
+	pxor orig_P+16, %xmm1
+	pxor orig_P+32, %xmm2
+	pxor orig_P+48, %xmm3
+	pxor orig_P+64, %xmm4
 
 	# save as new P
-	# FIXME: causes SEGV in first pxor (?!)
-	movdqu %xmm0, (%eax)
+	movdqu %xmm0,  0(%eax)
+	movdqu %xmm1, 16(%eax)
+	movdqu %xmm2, 32(%eax)
+	movdqu %xmm3, 48(%eax)
+	movq   %xmm4, 64(%eax)
+
+	#####################################################################
+	# copy whole orig_S (4 S-Boxes of 256 words) to bf.S (%eax+72)
+	movl $orig_S, %esi
+	movl %eax, %edi
+	addl $72, %edi
+	movl $256*4, %ecx
+	rep movsd
+
+	# TODO
+	# C. szyfruj w kółko (uint64_t) 0 podstawiając wyniki do bf.P i bf.S
+	# D. uzupełnij bf.S o wartości P (druga połowa 16-bitowego query)
 
 	movl %ebp, %esp
 	popl %ebp
 	ret
-
