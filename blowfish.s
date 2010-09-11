@@ -6,6 +6,21 @@
 .arch .sse2
 .section .data
 
+# offsets in struct bf
+.equ P1,    0
+.equ P5,   16
+.equ P9,   32
+.equ P13,  48
+.equ P17,  64
+.equ P18,  68
+.equ PSIZE, 72
+
+.equ S1,   72
+.equ S2, 1096
+.equ S3, 2120
+.equ S4, 3144
+.equ BFSIZE, 4168
+
 # P[1..18] of 32bit (PI in hex) - stored as 5 strings for 128-bit PXOR
 orig_P: .align 16
 	.byte 0x24, 0x3F, 0x6A, 0x88, 0x85, 0xA3, 0x08, 0xD3, 0x13, 0x19, 0x8A, 0x2E, 0x03, 0x70, 0x73, 0x44
@@ -152,11 +167,11 @@ orig_S: .align 4
 	.long 0x90D4F869, 0xA65CDEA0, 0x3F09252D, 0xC208E69F, 0xB74E6132, 0xCE77E25B, 0x578FDFE3, 0x3AC372E6
 
 ##### TEMPORARY ########
-tmp_key: .ascii "LUbu123DUBU"
+tmp_key: .ascii "ABECADLO"
 
 .section .bss
-# P[18 x 4] + S[4 × 65535 x 4]
-.lcomm tmp_bf 1048632
+# P[18 x 4] + S[4 × 256 x 4]
+.lcomm tmp_bf 4168
 
 .section .text
 .globl _start
@@ -164,31 +179,85 @@ tmp_key: .ascii "LUbu123DUBU"
 _start:
 	movl $tmp_bf, %eax
 	movl $tmp_key, %ebx
-	movl $11, %ecx
+	movl $8, %ecx
 	call bfish_init
 
 	movl $1, %eax
-	movl $0, %ebx
+	xor %ebx, %ebx
 	int $0x80
 
 ##################################
 
-## Init the blowfish structure
+### Encrypt 64 bits using Blowfish
+# @param %eax   (struct bf *) address of bf memory
+# @param %ebx   (uint32_t) higher half of block (so-called "left")
+# @param %ecx   (uint32_t) lower half of block  (so-called "right")
+# @uses esi, edi, edx
+# @return cryptogram in %ebx, %edx
+.type bfish_encrypt, @function
+bfish_encrypt:
+	movl $P1, %esi
+
+bfe_round: # for esi 0 to 15
+	# left = left XOR P[%esi]
+	xor (%eax, %esi, 4), %ebx
+
+	# F(left) = S1 + S2, XOR S3, + S4
+	movl %ebx, %edi
+	andl $0xff, %edi
+	movl S1(%eax, %edi, 4), %edx
+
+	movl %ebx, %edi
+	shrl $8, %edi
+	andl $0xff, %edi
+	addl S2(%eax, %edi, 4), %edx
+
+	movl %ebx, %edi
+	shrl $16, %edi
+	andl $0xff, %edi
+	xorl S3(%eax, %edi, 4), %edx
+
+	movl %ebx, %edi
+	shrl $24, %edi
+	andl $0xff, %edi
+	addl S4(%eax, %edi, 4), %edx
+
+	# right = right XOR F(left)
+	xor %edx, %ecx
+
+	# swap(left, right)
+	xchg %ebx, %ecx
+
+	# loop
+	incl %esi
+	cmp $16, %esi
+	jl bfe_round
+
+	# swap(left, right)
+	xchg %ebx, %ecx
+
+	# left = left XOR P18
+	xor P18(%eax), %ebx
+
+	# right = right XOR P17
+	xor P17(%eax), %ecx
+
+	ret
+
+### Init the blowfish structure
 # @param %eax   (struct bf *) address of bf memory
 # @param %ebx   (char *) address of key string
 # @param %ecx   (uint)   key length [B]
+# @modifies %ebx, %ecx, %edx, %esi, %edi, %xmm0..%xmm4
 .type bfish_init, @function
 bfish_init:
-	pushl %ebp
-	movl %esp, %ebp
-
 	### Prepare bf.P ####################################################
-	# expand the key to 72 bytes, storing temporarily in bf.P
+	# expand the key to length of bf.P
 	movl %ebx, %esi
 	addl %ebx, %ecx
 	movl %eax, %edi
 	movl %eax, %edx
-	addl $72, %edx
+	addl $PSIZE, %edx
 bfi_readkey:
 	# copy key to bf.P
 	movsb
@@ -205,38 +274,49 @@ bfi_readkey:
 
 bfi_toxmm:
 	# copy bf.P to xmm, remember about last bytes
-	movdqu  0(%eax), %xmm0
-	movdqu 16(%eax), %xmm1
-	movdqu 32(%eax), %xmm2
-	movdqu 48(%eax), %xmm3
-	movq   64(%eax), %xmm4
+	movdqu  P1(%eax), %xmm0
+	movdqu  P5(%eax), %xmm1
+	movdqu  P9(%eax), %xmm2
+	movdqu P13(%eax), %xmm3
+	movq   P17(%eax), %xmm4
 
 	# PXOR with orig_P
-	pxor orig_P+ 0, %xmm0
-	pxor orig_P+16, %xmm1
-	pxor orig_P+32, %xmm2
-	pxor orig_P+48, %xmm3
-	pxor orig_P+64, %xmm4
+	pxor orig_P + P1,  %xmm0
+	pxor orig_P + P5,  %xmm1
+	pxor orig_P + P9 , %xmm2
+	pxor orig_P + P13, %xmm3
+	pxor orig_P + P17, %xmm4
 
 	# save as new P
-	movdqu %xmm0,  0(%eax)
-	movdqu %xmm1, 16(%eax)
-	movdqu %xmm2, 32(%eax)
-	movdqu %xmm3, 48(%eax)
-	movq   %xmm4, 64(%eax)
+	movdqu %xmm0,  P1(%eax)
+	movdqu %xmm1,  P5(%eax)
+	movdqu %xmm2,  P9(%eax)
+	movdqu %xmm3,  P13(%eax)
+	movq   %xmm4,  P17(%eax)
 
 	### Prepare bf.S ####################################################
 	# copy whole orig_S (4 S-Boxes of 256 words) to bf.S (%eax+72)
 	movl $orig_S, %esi
 	movl %eax, %edi
-	addl $72, %edi
+	addl $S1, %edi
 	movl $256*4, %ecx
 	rep movsd
 
-	# TODO
-	# C. szyfruj w kółko (uint64_t) 0 podstawiając wyniki do bf.P i bf.S
-	# D. uzupełnij bf.S o wartości P (wyższa, niezerowa połowa 16-bitowego adresu bf.S)
+	### Replace bf with circ. cryptograms of 0 ##########################
+	xorl %ebx, %ebx
+	xorl %ecx, %ecx
+	xorl %esi, %esi
 
-	movl %ebp, %esp
-	popl %ebp
+bfi_writebf:
+	pushl %esi
+	call bfish_encrypt
+	popl  %esi
+
+	movl %ebx,  (%eax, %esi)
+	movl %ecx, 4(%eax, %esi)
+
+	addl $8, %esi
+	cmpl $BFSIZE, %esi
+	jl bfi_writebf
+
 	ret
