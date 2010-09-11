@@ -1,6 +1,6 @@
 #
 # Blowfish implementation in SSE2
-# By Pawel Foremski <pawel@foremski.pl> 2010
+# Pawel Foremski <pawel@foremski.pl> 2010
 #
 
 .arch .sse2
@@ -166,27 +166,10 @@ orig_S: .align 4
 	.long 0x85CBFE4E, 0x8AE88DD8, 0x7AAAF9B0, 0x4CF9AA7E, 0x1948C25C, 0x02FB8A8C, 0x01C36AE4, 0xD6EBE1F9
 	.long 0x90D4F869, 0xA65CDEA0, 0x3F09252D, 0xC208E69F, 0xB74E6132, 0xCE77E25B, 0x578FDFE3, 0x3AC372E6
 
-##### TEMPORARY ########
-tmp_key: .ascii "ABECADLO"
-
-.section .bss
-# P[18 x 4] + S[4 × 256 x 4]
-.lcomm tmp_bf 4168
-
+########################################################################
+################################# ASM ##################################
+########################################################################
 .section .text
-.globl _start
-
-_start:
-	movl $tmp_bf, %eax
-	movl $tmp_key, %ebx
-	movl $8, %ecx
-	call bfish_init
-
-	movl $1, %eax
-	xor %ebx, %ebx
-	int $0x80
-
-##################################
 
 ### Encrypt 64 bits using Blowfish
 # @param %eax   (struct bf *) address of bf memory
@@ -194,8 +177,8 @@ _start:
 # @param %ecx   (uint32_t) lower half of block  (so-called "right")
 # @uses esi, edi, edx
 # @return cryptogram in %ebx, %edx
-.type bfish_encrypt, @function
-bfish_encrypt:
+.type bfish_encrypt_, @function
+bfish_encrypt_:
 	movl $P1, %esi
 
 bfe_round: # for esi 0 to 15
@@ -249,8 +232,8 @@ bfe_round: # for esi 0 to 15
 # @param %ebx   (char *) address of key string
 # @param %ecx   (uint)   key length [B]
 # @modifies %ebx, %ecx, %edx, %esi, %edi, %xmm0..%xmm4
-.type bfish_init, @function
-bfish_init:
+.type bfish_init_, @function
+bfish_init_:
 	### Prepare bf.P ####################################################
 	# expand the key to length of bf.P
 	movl %ebx, %esi
@@ -309,7 +292,7 @@ bfi_toxmm:
 
 bfi_writebf:
 	pushl %esi
-	call bfish_encrypt
+	call bfish_encrypt_
 	popl  %esi
 
 	movl %ebx,  (%eax, %esi)
@@ -319,4 +302,56 @@ bfi_writebf:
 	cmpl $BFSIZE, %esi
 	jl bfi_writebf
 
+	ret
+
+########################################################################
+############################ C INTERFACE ###############################
+########################################################################
+
+.globl bfish_init
+#.globl bfish_encrypt
+
+## Wrapper for bfish_init_
+# void bfish_init(struct bf *bf, uint8_t *key, uint32_t keylen);
+.type bfish_init,@function
+bfish_init:
+	pushl %ebp
+	movl %esp, %ebp
+
+	pushl %esi
+	pushl %edi
+
+	movl 8(%ebp), %eax
+	movl 12(%ebp), %ebx
+	movl 16(%ebp), %ecx
+	call bfish_init_
+
+	popl %edi
+	popl %esi
+
+	leave
+	ret
+
+## Wrapper for bfish_encrypt_
+# extern void bfish_encrypt(struct bf *bf, void *block);
+.type bfish_encrypt,@function
+bfish_encrypt:
+	pushl %ebp
+	movl %esp, %ebp
+
+	pushl %esi
+	pushl %edi
+
+	movl  8(%ebp), %eax
+	movl 12(%ebp), %esi
+	movl   (%esi), %ebx
+	movl  4(%esi), %ecx
+	call bfish_encrypt_
+	movl %ebx,  (%esi)
+	movl %ecx, 4(%esi)
+
+	popl %edi
+	popl %esi
+
+	leave
 	ret
