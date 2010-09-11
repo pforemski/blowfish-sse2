@@ -187,21 +187,21 @@ bfe_round: # for esi 0 to 15
 
 	# F(left) = S1 + S2, XOR S3, + S4
 	movl %ebx, %edi
+	shrl $24, %edi
 	andl $0xff, %edi
 	movl S1(%eax, %edi, 4), %edx
 
 	movl %ebx, %edi
-	shrl $8, %edi
+	shrl $16, %edi
 	andl $0xff, %edi
 	addl S2(%eax, %edi, 4), %edx
 
 	movl %ebx, %edi
-	shrl $16, %edi
+	shrl $8, %edi
 	andl $0xff, %edi
 	xorl S3(%eax, %edi, 4), %edx
 
 	movl %ebx, %edi
-	shrl $24, %edi
 	andl $0xff, %edi
 	addl S4(%eax, %edi, 4), %edx
 
@@ -276,6 +276,17 @@ bfi_toxmm:
 	movdqu %xmm2,  P9(%eax)
 	movdqu %xmm3,  P13(%eax)
 	movq   %xmm4,  P17(%eax)
+
+	# swap bytes
+	xorl %esi,%esi
+	clc
+bfi_bswap:
+	movl (%eax,%esi,4), %edx
+	bswap %edx
+	movl %edx, (%eax,%esi,4)
+	incl %esi
+	cmpl $18, %esi
+	jl bfi_bswap
 
 	### Prepare bf.S ####################################################
 	# copy whole orig_S (4 S-Boxes of 256 words) to bf.S (%eax+72)
