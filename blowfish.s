@@ -7,12 +7,24 @@
 .section .data
 
 # offsets in struct bf
-.equ P1,    0
-.equ P5,   16
-.equ P9,   32
-.equ P13,  48
-.equ P17,  64
-.equ P18,  68
+.equ P1,     0
+.equ P2,     4
+.equ P3,     8
+.equ P4,    12
+.equ P5,    16
+.equ P6,    20
+.equ P7,    24
+.equ P8,    28
+.equ P9,    32
+.equ P10,   36
+.equ P11,   40
+.equ P12,   44
+.equ P13,   48
+.equ P14,   52
+.equ P15,   56
+.equ P16,   60
+.equ P17,   64
+.equ P18,   68
 .equ PSIZE, 72
 
 .equ S1,   72
@@ -171,60 +183,96 @@ orig_S: .align 4
 ########################################################################
 .section .text
 
-### Encrypt 64 bits using Blowfish
-# @param %eax   (struct bf *) address of bf memory
-# @param %ebx   (uint32_t) higher half of block (so-called "left")
-# @param %ecx   (uint32_t) lower half of block  (so-called "right")
-# @uses esi, edi, edx
-# @return cryptogram in %ebx, %edx
-.type bfish_encrypt_, @function
-bfish_encrypt_:
-	movl $P1, %esi
-
-bfe_round: # for esi 0 to 15
-	# left = left XOR P[%esi]
-	xor (%eax, %esi, 4), %ebx
+## Do one round of Blowfish
+# @param %eax    (struct bf *) address of bf
+# @param P       (uint32_t *) pointer to proper P entry
+# @param left    (register) Blowfish "left"
+# @param right   (register) Blowfish "right"
+# @uses edi, edx
+.macro round P:req, left:req, right:req
+	# left = left XOR P
+	xor \P(%eax), \left
 
 	# F(left) = S1 + S2, XOR S3, + S4
-	movl %ebx, %edi
+	movl \left, %edi
 	shrl $24, %edi
 	andl $0xff, %edi
 	movl S1(%eax, %edi, 4), %edx
 
-	movl %ebx, %edi
+	movl \left, %edi
 	shrl $16, %edi
 	andl $0xff, %edi
 	addl S2(%eax, %edi, 4), %edx
 
-	movl %ebx, %edi
+	movl \left, %edi
 	shrl $8, %edi
 	andl $0xff, %edi
 	xorl S3(%eax, %edi, 4), %edx
 
-	movl %ebx, %edi
+	movl \left, %edi
 	andl $0xff, %edi
 	addl S4(%eax, %edi, 4), %edx
 
 	# right = right XOR F(left)
-	xor %edx, %ecx
+	xor %edx, \right
+.endm
 
-	# swap(left, right)
+### Encrypt 64 bits using Blowfish
+# @param %eax   (struct bf *) address of bf memory
+# @param %ebx   (uint32_t) higher half of block (so-called "left")
+# @param %ecx   (uint32_t) lower half of block  (so-called "right")
+# @uses edi, edx
+# @return cryptogram in %ebx, %ecx
+.type bfish_encrypt_, @function
+bfish_encrypt_:
+	ROUND  P1, %ebx, %ecx
+	ROUND  P2, %ecx, %ebx
+	ROUND  P3, %ebx, %ecx
+	ROUND  P4, %ecx, %ebx
+	ROUND  P5, %ebx, %ecx
+	ROUND  P6, %ecx, %ebx
+	ROUND  P7, %ebx, %ecx
+	ROUND  P8, %ecx, %ebx
+	ROUND  P9, %ebx, %ecx
+	ROUND P10, %ecx, %ebx
+	ROUND P11, %ebx, %ecx
+	ROUND P12, %ecx, %ebx
+	ROUND P13, %ebx, %ecx
+	ROUND P14, %ecx, %ebx
+	ROUND P15, %ebx, %ecx
+	ROUND P16, %ecx, %ebx
 	xchg %ebx, %ecx
-
-	# loop
-	incl %esi
-	cmp $16, %esi
-	jl bfe_round
-
-	# swap(left, right)
-	xchg %ebx, %ecx
-
-	# left = left XOR P18
 	xor P18(%eax), %ebx
-
-	# right = right XOR P17
 	xor P17(%eax), %ecx
+	ret
 
+### Decrypt 64 bits using Blowfish
+# @param %eax   (struct bf *) address of bf memory
+# @param %ebx   (uint32_t) higher half of block (so-called "left")
+# @param %ecx   (uint32_t) lower half of block  (so-called "right")
+# @uses edi, edx
+# @return cleartext in %ebx, %ecx
+.type bfish_decrypt_, @function
+bfish_decrypt_:
+	ROUND P18, %ebx, %ecx
+	ROUND P17, %ecx, %ebx
+	ROUND P16, %ebx, %ecx
+	ROUND P15, %ecx, %ebx
+	ROUND P14, %ebx, %ecx
+	ROUND P13, %ecx, %ebx
+	ROUND P12, %ebx, %ecx
+	ROUND P11, %ecx, %ebx
+	ROUND P10, %ebx, %ecx
+	ROUND P9,  %ecx, %ebx
+	ROUND P8,  %ebx, %ecx
+	ROUND P7,  %ecx, %ebx
+	ROUND P6,  %ebx, %ecx
+	ROUND P5,  %ecx, %ebx
+	ROUND P4,  %ebx, %ecx
+	ROUND P3,  %ecx, %ebx
+	xchg %ebx, %ecx
+	xor P1(%eax), %ebx
+	xor P2(%eax), %ecx
 	ret
 
 ### Init the blowfish structure
@@ -302,10 +350,7 @@ bfi_bswap:
 	xorl %esi, %esi
 
 bfi_writebf:
-	pushl %esi
 	call bfish_encrypt_
-	popl  %esi
-
 	movl %ebx,  (%eax, %esi)
 	movl %ecx, 4(%eax, %esi)
 
@@ -320,7 +365,8 @@ bfi_writebf:
 ########################################################################
 
 .globl bfish_init
-#.globl bfish_encrypt
+.globl bfish_encrypt
+.globl bfish_decrypt
 
 ## Wrapper for bfish_init_
 # void bfish_init(struct bf *bf, uint8_t *key, uint32_t keylen);
@@ -358,6 +404,30 @@ bfish_encrypt:
 	movl   (%esi), %ebx
 	movl  4(%esi), %ecx
 	call bfish_encrypt_
+	movl %ebx,  (%esi)
+	movl %ecx, 4(%esi)
+
+	popl %edi
+	popl %esi
+
+	leave
+	ret
+
+## Wrapper for bfish_decrypt_
+# extern void bfish_decrypt(struct bf *bf, void *block);
+.type bfish_decrypt,@function
+bfish_decrypt:
+	pushl %ebp
+	movl %esp, %ebp
+
+	pushl %esi
+	pushl %edi
+
+	movl  8(%ebp), %eax
+	movl 12(%ebp), %esi
+	movl   (%esi), %ebx
+	movl  4(%esi), %ecx
+	call bfish_decrypt_
 	movl %ebx,  (%esi)
 	movl %ecx, 4(%esi)
 
