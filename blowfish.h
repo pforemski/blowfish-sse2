@@ -16,5 +16,6 @@ struct bf {
 
 extern void bfish_init(struct bf *bf, uint8_t *key, uint32_t keylen);
 extern void bfish_encrypt(struct bf *bf, void *block);
+extern void bfish_decrypt(struct bf *bf, void *block);
 
 #endif
