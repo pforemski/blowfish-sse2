@@ -1,3 +1,9 @@
+/*
+ * Blowfish implementation in SSE2
+ * Copyright (C) 2010 Pawel Foremski
+ * Licensed under GNU GPL v3
+ */
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <assert.h>

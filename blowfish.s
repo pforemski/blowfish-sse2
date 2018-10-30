@@ -1,6 +1,7 @@
 #
 # Blowfish implementation in SSE2
-# Pawel Foremski <pawel@foremski.pl> 2010
+# Copyright (C) 2010 Pawel Foremski <pjf@foremski.pl>
+# Licensed under GNU GPL v3
 #
 
 .arch .sse2

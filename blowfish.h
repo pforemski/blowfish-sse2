@@ -1,3 +1,9 @@
+/*
+ * Blowfish implementation in SSE2
+ * Copyright (C) 2010 Pawel Foremski <pjf@foremski.pl>
+ * Licensed under GNU GPL v3
+ */
+
 #ifndef _BLOWFISH_H_
 #define _BLOWFISH_H_
 
